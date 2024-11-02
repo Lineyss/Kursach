@@ -1,0 +1,38 @@
+<!-- main/templates/admin/user_summary.html -->
+
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+    <h1> Sales Summary </h1>
+{% endblock %}
+
+{% block result_list %}
+    {{ block.super }} 
+
+    <canvas></canvas>
+
+    <script type="module">
+        import Chart from 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js';
+
+        let ctx = document.querySelector('canvas').getContext('2d');
+
+        Chart.defaults.global.defaultFontFamily = "Lato";
+        Chart.defaults.global.defaultFontSize = 18;
+
+        var densityData = {
+        label: 'Файлы и Папки',
+        data: [5427, 5243]
+        };
+
+        var barChart = new Chart(densityCanvas, {
+        type: 'bar',
+        data: {
+            labels: ["Файлы", "Папки"],
+            datasets: [densityData]
+        }
+        });
+    </script>
+
+{% endblock %}
+
+{% block pagination %}{% endblock %}

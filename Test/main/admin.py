@@ -1,5 +1,8 @@
 from import_export.admin import ImportExportModelAdmin
+from django.shortcuts import render
+from django.db.models import Count
 from django.contrib import admin
+from django.urls import path
 from .models import *
 
 # Register your models here.
@@ -10,7 +13,15 @@ class TegAdmin(ImportExportModelAdmin):
 
 @admin.register(FileFolder)
 class FileFolderAdmin(ImportExportModelAdmin):
-    pass
+    change_list_template = 'admin/user_summary.html'
+    def getDataForStats(self, model):
+        return File.objects.count()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['files'] = self.getDataForStats(File)
+        extra_context['folders'] = self.getDataForStats(Folder)
+        return super().changelist_view(request, extra_context=extra_context)
 
 @admin.register(Folder)
 class FolderAdmin(ImportExportModelAdmin):
@@ -21,13 +32,13 @@ class FileAdmin(ImportExportModelAdmin):
     pass
 
 @admin.register(ActivityLog)
-class ActivityLog(ImportExportModelAdmin):
+class ActivityLogAdmin(ImportExportModelAdmin):
     pass
 
 @admin.register(Premission)
-class Premission(ImportExportModelAdmin):
+class PremissionAdmin(ImportExportModelAdmin):
     pass
 
 @admin.register(SharedURI)
-class SharedURI(ImportExportModelAdmin):
+class SharedURIAdmin(ImportExportModelAdmin):
     pass
