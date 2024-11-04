@@ -1,21 +1,22 @@
 from import_export.admin import ImportExportModelAdmin
-from django.shortcuts import render
 from django.db.models import Count
 from django.contrib import admin
-from django.urls import path
 from .models import *
 
 # Register your models here.
 
 @admin.register(Teg)
 class TegAdmin(ImportExportModelAdmin):
-    pass
+    list_display = ('id', 'Title', )
+    list_display_links = ('id', )
+    search_fields = ('Title', 'id', )
+    list_editable = ('Title', )
 
 @admin.register(FileFolder)
 class FileFolderAdmin(ImportExportModelAdmin):
     change_list_template = 'admin/user_summary.html'
     def getDataForStats(self, model):
-        return File.objects.count()
+        return model.objects.count()
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
@@ -25,20 +26,39 @@ class FileFolderAdmin(ImportExportModelAdmin):
 
 @admin.register(Folder)
 class FolderAdmin(ImportExportModelAdmin):
-    pass
+    list_display = ('id', 'IDFileFolder', 'IDFolder', 'Title', 'Size', 'Date', )
+    list_display_links = ('id',)
+    search_fields = ('id', 'Title', 'Size', 'Date', )
+    list_editable = ('Title', )
+    list_filter = ('IDUser', 'IDFolder', 'Date', )
+
 
 @admin.register(File)
 class FileAdmin(ImportExportModelAdmin):
-    pass
+    list_display = ('id', 'IDFileFolder', 'IDFolder', 'Title', 'Size', 'Date', )
+    list_display_links = ('id',)
+    search_fields = ('id', 'Title', 'Size', 'Date', )
+    list_editable = ('Title', )
+    list_filter = ('IDUser', 'IDFolder', 'Date', )
 
 @admin.register(ActivityLog)
 class ActivityLogAdmin(ImportExportModelAdmin):
-    pass
+    list_display = ('id', 'IDUser', 'IDFileFolder', 'Action', 'Date', )
+    list_display_links = ('id',)
+    search_fields = ('id', 'Action', )
+    list_editable = ('Action', )
+    list_filter = ('IDUser', 'IDFileFolder', 'Date', )
 
 @admin.register(Premission)
 class PremissionAdmin(ImportExportModelAdmin):
-    pass
+    list_display = ('id', 'Title', )
+    list_display_links = ('id',)
+    search_fields = ('id', 'Title', )
+    list_editable = ('Title', )
 
 @admin.register(SharedURI)
 class SharedURIAdmin(ImportExportModelAdmin):
-    pass
+    list_display = ('id', 'IDSender', 'IDPremission', 'UrlAddress', 'DateCreate', 'DateDelete')
+    list_display_links = ('id',)
+    search_fields = ('id', 'UrlAddress', )
+    list_filter = ('DateCreate', 'DateDelete', 'IDSender', 'IDPremission')

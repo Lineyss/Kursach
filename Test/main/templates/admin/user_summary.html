@@ -9,30 +9,32 @@
 {% block result_list %}
     {{ block.super }} 
 
-    <canvas></canvas>
+    <canvas id="myChart"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
-        import Chart from 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js';
-
-        let ctx = document.querySelector('canvas').getContext('2d');
-
-        Chart.defaults.global.defaultFontFamily = "Lato";
-        Chart.defaults.global.defaultFontSize = 18;
-
-        var densityData = {
-        label: 'Файлы и Папки',
-        data: [5427, 5243]
-        };
-
-        var barChart = new Chart(densityCanvas, {
-        type: 'bar',
-        data: {
-            labels: ["Файлы", "Папки"],
-            datasets: [densityData]
-        }
+        const ctx = document.getElementById('myChart');
+        let files = "{{files}}"
+        let folder = "{{folders}}"
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['files', 'folders'],
+                datasets: [{
+                    label: 'Folder/Files',
+                    data: [files, folder],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
         });
     </script>
 
 {% endblock %}
-
-{% block pagination %}{% endblock %}
