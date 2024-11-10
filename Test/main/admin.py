@@ -1,3 +1,5 @@
+from django.http import HttpRequest
+from django.template.response import TemplateResponse
 from import_export.admin import ImportExportModelAdmin
 from django.db.models import Count
 from django.contrib import admin
@@ -15,6 +17,7 @@ class TegAdmin(ImportExportModelAdmin):
 @admin.register(FileFolder)
 class FileFolderAdmin(ImportExportModelAdmin):
     change_list_template = 'admin/user_summary.html'
+
     def getDataForStats(self, model):
         return model.objects.count()
 

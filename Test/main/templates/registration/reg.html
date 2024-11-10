@@ -1,0 +1,29 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=`, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/reg_main.css' %}">
+    <title>
+        {% block title %}
+            Регистрация
+        {% endblock %}
+    </title>
+</head>
+<body>
+    <div class="main">
+        <h1>
+            {% block header %}
+                Регистрация
+            {% endblock %}
+        </h1>
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">
+                Отправить
+            </button>
+        </form>
+    </div>
+</body>
+</html>
