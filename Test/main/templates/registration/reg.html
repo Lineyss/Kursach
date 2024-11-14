@@ -20,6 +20,11 @@
         <form method="POST">
             {% csrf_token %}
             {{ form.as_p }}
+
+            {% block change %}
+                <a href="{% url 'login' %}">Авторизоваться</a>
+            {% endblock %}
+            
             <button type="submit">
                 Отправить
             </button>

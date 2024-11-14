@@ -22,13 +22,17 @@ class FileFolder(models.Model):
         verbose_name_plural = 'Идентификатор файлов и папок'
 
 class AFileFolder(models.Model):
+    Path = models.CharField(default='/', verbose_name='Путь', max_length=100, blank=True, null=True)
+    Title = models.CharField(verbose_name='Название', max_length=100)
     IDFileFolder = models.OneToOneField(FileFolder, on_delete=models.CASCADE, editable=False, unique=True, blank=True, null=True, verbose_name='Уникальный ID')
-    Title = models.CharField(max_length=100, verbose_name='Название')
-    Size = models.IntegerField(verbose_name='Размер')
+    Size = models.IntegerField(verbose_name='Размер', default=0, blank=True)
     Date = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False, blank=True)
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return f'{self.Path}{self.Title}'
 
     def save(self, *args, **kwargs)-> None:
         if self.IDFileFolder_id is None or self.IDFileFolder is None:
@@ -49,13 +53,40 @@ class Folder(AFileFolder):
         verbose_name = "Папка"
         verbose_name_plural = 'Папки'
 
+    def save(self, *args, **kwargs):
+        if self.IDFolder is not None:
+            self.Size += self.IDFolder.Size
+            self.Path += self.IDFolder.Path
+        else:
+            self.Size = sum(file.Size for file in File.objects.filter(IDFolder_id = self.pk))
+            self.Path = '/'
+
+        return super().save(*args, **kwargs)
+
 class File(AFileFolder):
     IDUser = models.ManyToManyField(User, verbose_name='Пользователь(и)')
     IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True)
-    
+    File = models.FileField(verbose_name='Файл')
+
     class Meta:
         verbose_name = "Файл"
         verbose_name_plural = 'Файлы'
+
+    def save(self, *args, **kwargs):
+        self.Size = self.File.size
+        self.Title = self.File.name
+
+        if self.IDFolder is not None:
+            self.Path = f'/{self.IDFolder.Title}/'
+            self.IDFolder.Size += self.Size
+
+        self.Path += self.Title
+        return super().save(*args, **kwargs)
+    
+    def delete(self, using = ..., keep_parents = ...):
+        if self.IDFolder is not None:
+            self.IDFileFolder.Size -= self.Size
+        return super().delete(using, keep_parents)
 
 class ActivityLog(models.Model):
     IDUser = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
@@ -77,6 +108,7 @@ class Premission(models.Model):
 class SharedURI(models.Model):
     IDSender = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Создатель ссылки')
     IDPremission = models.ForeignKey(Premission, on_delete=models.CASCADE, verbose_name='Права')
+    IDFileFolder = models.ForeignKey(FileFolder, on_delete=models.CASCADE, verbose_name='Папка/Файл')
     UrlAddress = models.CharField(max_length=50, verbose_name='Ссылка')
     DateCreate = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False)
     DateDelete = models.DateTimeField(verbose_name='Дата деактивации', blank=True, null=True, editable=False)

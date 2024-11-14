@@ -34,7 +34,8 @@ class FolderAdmin(ImportExportModelAdmin):
     search_fields = ('id', 'Title', 'Size', 'Date', )
     list_editable = ('Title', )
     list_filter = ('IDUser', 'IDFolder', 'Date', )
-
+    fields = ('IDFolder', 'IDUser', 'Title')
+    
 
 @admin.register(File)
 class FileAdmin(ImportExportModelAdmin):
@@ -43,6 +44,7 @@ class FileAdmin(ImportExportModelAdmin):
     search_fields = ('id', 'Title', 'Size', 'Date', )
     list_editable = ('Title', )
     list_filter = ('IDUser', 'IDFolder', 'Date', )
+    fields = ('IDFolder', 'IDUser', 'File')
 
 @admin.register(ActivityLog)
 class ActivityLogAdmin(ImportExportModelAdmin):
