@@ -1,0 +1,44 @@
+<style>
+.context_menu_item {
+        position: absolute;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: none;
+        z-index: 100;
+        text-align: center;
+        cursor: pointer;
+        width: 120px;
+        height: auto;
+    }
+
+    .item_context_menu
+    {
+        margin: 0 !important;
+        width: 100%;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: start;
+    }
+
+    .item_context_menu:hover {
+        background-color: #f0f0f0;
+    }
+
+    .context_menu_item button {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font: inherit;
+        margin-left: 5px;
+    }
+</style>
+
+<div id="context_menu_item_parent" class="context_menu_item">
+    <div class="item_context_menu" id="context_menu_button" name="create_folder">
+      <button type="submit">Создать папку</button>
+    </div>
+</div>

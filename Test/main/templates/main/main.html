@@ -1,22 +1,67 @@
-{% extends "./base.html" %}
+{% extends "./base/base.html" %}
+
+{% load static %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+{% endblock %}
 
 {% block title %}
-    Авторизация
+    Главная
 {% endblock %}
 
 {% block content %}
-    <header>
-       <button>
-            Создать файл
-       </button>
-       <button>
-            Создать папку
-       </button>
-    </header>
-    <div class="main">
-        <div class="item">
-            <img>
-            <span>Название</span>
-        </div>
+    <div id="drop-zone" class="items">    
+        {% for file_folder in page_obj %}
+            <div class="item">
+                <div class="image-container">
+                    <img
+                    {% if file_folder.is_file %}
+                    src="{% static 'images/file-icon.svg' %}"
+                    {% else %}
+                    src="{% static 'images/folder-icon.svg' %}"
+                    {% endif %}
+                    />
+                </div>
+                <div class="title-container">
+                    <p style="display: none;" id="id">
+                        {{ file_folder.IDFileFolder.id }}
+                    </p>
+                    <input readonly type="text" maxlength="150" value="{{ file_folder.Title }}">
+                </div>
+            </div>
+        {% endfor %}
     </div>
+
+    <form method="POST" id="form-file" action="{% url 'file-create' %}" enctype="multipart/form-data" readonly>
+        {% csrf_token %}
+        <input type="file" id="id_File" name="File" />
+    </form>
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+
+    {% include 'components/context_menu_item.html' %}
+    {% include 'components/context_menu_parent_items.html' %}
+
+{% endblock %}  
+
+{% block js %}
+    <script type="module" src="{% static 'js/main.js' %}"></script>
+    <!-- <script type="module" src="{% static 'js/drag_and_drop.js' %}"></script> -->
 {% endblock %}

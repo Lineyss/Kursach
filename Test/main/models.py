@@ -1,7 +1,9 @@
-from typing import Any
-from django.db import models
-from datetime import timedelta
 from django.contrib.auth.models import User
+from datetime import timedelta
+from django.db import models
+from typing import Any
+import os
+
 # Create your models here.
 
 class Teg(models.Model):
@@ -12,7 +14,7 @@ class Teg(models.Model):
         verbose_name_plural = 'Теги'
 
 class FileFolder(models.Model):
-    IDTeg = models.ForeignKey(Teg, verbose_name='Тег', on_delete=models.CASCADE, null=True, blank=True)
+    IDTeg = models.ForeignKey(Teg, verbose_name='Тег', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{self.pk}'
@@ -20,6 +22,19 @@ class FileFolder(models.Model):
     class Meta:
         verbose_name = "Идентификатор файлов и папок"
         verbose_name_plural = 'Идентификатор файлов и папок'
+
+    def get_related_folder(self):
+        try:
+            return self.folder
+        except Folder.DoesNotExist:
+            return None
+
+    def get_related_file(self):
+        try:
+            return self.file 
+        except File.DoesNotExist:
+            return None
+
 
 class AFileFolder(models.Model):
     Path = models.CharField(default='/', verbose_name='Путь', max_length=100, blank=True, null=True)
@@ -34,6 +49,9 @@ class AFileFolder(models.Model):
     def __str__(self):
         return f'{self.Path}{self.Title}'
 
+    def set_unique_name(self):
+        titles = AFileFolder.objects.filter()
+
     def save(self, *args, **kwargs)-> None:
         if self.IDFileFolder_id is None or self.IDFileFolder is None:
             fileFolder = FileFolder.objects.create()
@@ -42,12 +60,14 @@ class AFileFolder(models.Model):
         return super().save(*args, **kwargs)
     
     def delete(self, using: Any = ..., keep_parents: bool = ...) -> tuple[int, dict[str, int]]:
-        FileFolder.objects.delete(pk = self.IDFileFolder)
+        FileFolder.objects.filter(id=self.IDFileFolder.id).first().delete()
         return super().delete(using, keep_parents)
 
 class Folder(AFileFolder):
     IDUser = models.ManyToManyField(User, verbose_name='Пользователь(и)')
     IDFolder = models.ForeignKey('self', on_delete=models.CASCADE, verbose_name='Папка где хранится папка', null=True, blank=True)
+
+    is_file = False
 
     class Meta:
         verbose_name = "Папка"
@@ -63,30 +83,63 @@ class Folder(AFileFolder):
 
         return super().save(*args, **kwargs)
 
+
+def user_directory_path(instance, filename):
+    return f"uploads/{filename}"
+
 class File(AFileFolder):
     IDUser = models.ManyToManyField(User, verbose_name='Пользователь(и)')
     IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True)
-    File = models.FileField(verbose_name='Файл')
-
+    File = models.FileField(upload_to=user_directory_path, verbose_name='Файл')
+    
+    is_file = True
+    
     class Meta:
         verbose_name = "Файл"
         verbose_name_plural = 'Файлы'
 
+    def rename_file(self):
+        current_file_name = self.File.name
+
+        new_file_name = os.path.join(os.path.dirname(current_file_name), self.Title)
+        new_file_path = os.path.join(os.path.dirname(self.File.path), self.Title)
+
+
+        if os.path.exists(self.File.path):
+            os.rename(self.File.path, new_file_path)
+        else:
+            os.remove(self.File.path)
+            file = open(new_file_path, 'x')
+            file.close()
+
+        self.File.name = new_file_name
+
+
     def save(self, *args, **kwargs):
         self.Size = self.File.size
-        self.Title = self.File.name
+        file_title = os.path.basename(self.File.name)
+
+        if self.Title == '':
+            self.Title = file_title
+            self.Path = f'/{self.Title}'
+
+        elif self.Title != file_title:
+            self.rename_file()
+            self.Path = f'/{self.Title}'
 
         if self.IDFolder is not None:
-            self.Path = f'/{self.IDFolder.Title}/'
+            self.Path = f'/{self.IDFolder.Title}/{self.Title}'
             self.IDFolder.Size += self.Size
 
-        self.Path += self.Title
-        return super().save(*args, **kwargs)
-    
-    def delete(self, using = ..., keep_parents = ...):
+        return super().save(*args, **kwargs) 
+
+
+    def delete(self, *args, **kwargs):
         if self.IDFolder is not None:
             self.IDFileFolder.Size -= self.Size
-        return super().delete(using, keep_parents)
+
+        os.remove(self.File.path)
+        return super().delete(*args, **kwargs)
 
 class ActivityLog(models.Model):
     IDUser = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')

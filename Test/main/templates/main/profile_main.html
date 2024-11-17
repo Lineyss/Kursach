@@ -1,0 +1,14 @@
+{% extends "./base/profile_base.html" %}
+
+{% block profile_content %}
+    <button class="button">
+        <a href="{% url 'username_change' %}">
+            Изменить ник
+        </a>
+    </button>
+    <button class="button">
+        <a href="{% url 'password_change' %}">
+            Изменить пароль
+        </a>
+    </button>
+{% endblock %}

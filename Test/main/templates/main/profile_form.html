@@ -1,0 +1,16 @@
+{% extends "./profile_main.html" %}
+
+{% block profile_content %}
+
+    <form method="POST">
+        {% include "components/form.html" %}
+
+        <a class="button" href="{% url 'profile' %}" style="margin-right: 10px;">
+            Назад
+        </a>
+
+        <button type="submit" class="button">
+            Изменить
+        </button>
+    </form>
+{% endblock %}

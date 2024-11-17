@@ -1,0 +1,18 @@
+{% extends "./base.html" %}
+{% load static %}
+{% block css %}
+<link rel="stylesheet" href="{% static 'css/profile_name.css' %}">
+{% endblock %}
+
+{% block title %}
+    Личный кабинет
+{% endblock %}
+
+{% block content %}
+<h2>Привет {{user.username}}</h2>
+<div class="profile_content">
+    {% block profile_content %}
+
+    {% endblock %}
+</div>
+{% endblock %}  

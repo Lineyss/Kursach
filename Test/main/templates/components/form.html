@@ -1,0 +1,65 @@
+<style>
+    .fieldWrapper
+    {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .container
+    {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .container_label, .conatiner_field
+    {
+        width: 50%;
+        height: 100%;
+    }
+
+    .container_label 
+    {
+        display: flex;
+        align-items: center;
+        justify-content: start;
+    }
+
+    .container_label > label 
+    {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .conatiner_field > input 
+    {
+        margin: 0 !important;
+    }
+
+    .errorlist li
+    {
+        text-align: start;
+        color: red;
+    }
+</style>
+
+{% csrf_token %}
+
+{% for field in form %}
+    <div class="fieldWrapper">
+        {{ field.errors }}
+        <div class="container">
+            <div class="container_label">
+                {{ field.label_tag }} 
+            </div>
+            <div class="conatiner_field">
+                {{ field }}
+            </div>
+        </div>
+    </div>
+{% endfor %}

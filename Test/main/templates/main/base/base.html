@@ -5,11 +5,12 @@
 
         {% load static %}
         
-        <link rel="stylesheet" href="{% static 'css/main.css' %}">
+        <link rel="stylesheet" href="{% static 'css/base.css' %}">
 
         {% block css %}
         
         {% endblock %}
+        
         <title>
             {% block title %}
 
@@ -17,18 +18,8 @@
         </title>
     </head>
     <body>
-        <header>
-            <a href="">
-                Привет {{ user.username }}  
-            </a>
-
-            <form method="POST" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit">
-                    Выйти
-                </button>
-            </form>
-        </header>
+        {% include "components/header.html" %}
+        
         <div class="content-conatiner">
             <div class="content">
                 {% block content %}
