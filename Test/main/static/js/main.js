@@ -60,7 +60,7 @@ menuParent.get_button("create_folder").addEventListener("click", (e)=>{
     let folder = createFolder(1, "asd");
     folder = parser.parseFromString(folder, "text/html").body.firstElementChild
     items.appendChild(folder); 
-    new MenuItems(context_menu_item).start(folder);
+    menuItem.start(folder);
 });
 
 // menuParent.get_button("change").addEventListener("click", ()=>{
@@ -73,7 +73,7 @@ menuParent.get_button("create_folder").addEventListener("click", (e)=>{
 fileInput.addEventListener('change', () => {
     let url = formFile.getAttribute('action')
     let method = formFile.getAttribute('method')
-    sendRequest(url, new FormData(formFile), method, true, function(){
+    sendRequest(url, new FormData(formFile), method, true, function() {
         let data = this.response;
 
         if(this.status != 200)

@@ -62,6 +62,7 @@ export class MenuItems extends ContextWorkerBase {
         itemElement = itemElement.querySelector(".title-container");
         console.log(itemElement);
         let idElement = itemElement.querySelector("#id");
+        console.log(idElement);
         if (idElement) {
             let id = idElement.textContent.trim();
 
