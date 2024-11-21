@@ -46,29 +46,13 @@ const formFile = document.getElementById('form-file');
 const items = document.querySelector(".items");
 
 const menuParent = new MenuParentItem(context_menu_parent);
-const menuItem = new MenuItems(context_menu_item);
 new DragAndDrop(dropZone, fileInput).start();
-const parser = new DOMParser();
 
 document.querySelectorAll(".item").forEach(element => {
-    menuItem.start(element);
+    new MenuItems(context_menu_item).start(element);
 });
 
 menuParent.start(items);
-
-menuParent.get_button("create_folder").addEventListener("click", (e)=>{
-    let folder = createFolder(1, "asd");
-    folder = parser.parseFromString(folder, "text/html").body.firstElementChild
-    items.appendChild(folder); 
-    menuItem.start(folder);
-});
-
-// menuParent.get_button("change").addEventListener("click", ()=>{
-//     if(menuItem.current_element)
-//     {
-//         console.log(menuItem.current_element);
-//     }
-// });
 
 fileInput.addEventListener('change', () => {
     let url = formFile.getAttribute('action')

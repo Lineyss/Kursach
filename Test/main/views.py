@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.http import HttpResponse
 from django import forms
+import os
 
 # Create your views here.
 
@@ -91,20 +92,10 @@ def download(request, id):
     if request.method == 'GET':
         file_folder = FileFolder.objects.filter(id=id).first() 
         file = file_folder.get_related_file()
-        print(file.Title)
-        print(file.File.name)
-        if file:
-            response = HttpResponse(content_type='application/force-download')
-            response['Content-Disposition'] = f'attachment; filename={file.Title}'
-            response['X-Sendfile'] = file.File.name
-            return response
-            # try:
-            #     with open(file.File.path, 'rb') as f:
-            #         response = FileResponse(f.read(), content_type='application/octet-stream')
-            #         response['Content-Disposition'] = f'attachment; filename="{file.Title}"'
-            #         return response 
-            # except:
-            #     return HttpResponse('Не удалось загрузить файл, попробуйте позже', status=400)
+        file_download = open(file.File.path, "rb")
+        response = FileResponse(file_download)
+        response['Content-Disposition'] = f'attachment; filename="{file.Title}"'
+        
+        return response
 
     return HttpResponse('Не найти файл', status=400)
-        

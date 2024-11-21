@@ -31,7 +31,7 @@ class FileFolder(models.Model):
 
     def get_related_file(self):
         try:
-            return self.file 
+            return self.file
         except File.DoesNotExist:
             return None
 
