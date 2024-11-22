@@ -74,7 +74,42 @@
     cursor: pointer;
 }
 
-#form-file
+.form-support
 {
     display: none;
+}
+
+.file-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+    cursor: not-allowed;
+}
+
+.file-input:focus {
+    outline: none;
+    border-color: #007bff;
+    cursor: text;
+}
+
+.file-input:read-only {
+    color: #666;
+}
+
+.edit-button {
+    margin-top: 10px;
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s
+}
+
+.edit-button:hover {
+    background-color: #0056b3;
 }

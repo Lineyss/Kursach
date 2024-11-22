@@ -1,7 +1,7 @@
 class ContextWorkerBase {
     #buttons = new Map();
     items = [];
-    clone_context_menu = null;
+    current_element = null;
 
     constructor(context_menu) {
         if(!context_menu)
@@ -35,57 +35,67 @@ class ContextWorkerBase {
         
         this.current_element = event.target;
 
-        this.copy_context_menu = this.context_menu.cloneNode(true);
-
-        this.copy_context_menu.style.left = event.clientX + "px";
-        this.copy_context_menu.style.top = event.clientY + "px";
-        this.copy_context_menu.style.display = "block";
-        document.body.appendChild(this.copy_context_menu);
+        this.context_menu.style.left = event.clientX + "px";
+        this.context_menu.style.top = event.clientY + "px";
+        this.context_menu.style.display = "block";
 
         document.addEventListener("click", this.close_contextmenu.bind(this));
     }
 
     close_contextmenu(event) {
-        if (!this.context_menu.contains(event.target) && event.target !== this.item || event.button === 0) {
-            this.copy_context_menu.remove();
+        if (!this.context_menu.contains(event.target) && this.items.includes(event.target) || event.button === 0) {
             document.removeEventListener("click", this.close_contextmenu.bind(this));
+            this.context_menu.style.display = 'none';
         }
-    }
-
-    // Сюда добавлять события для кнопок
-    set_button_event()
-    {
-
     }
 
     start(item) {
         this.items.push(item);
         item.addEventListener("contextmenu", (e) => this.view_contextmenu(e));
-        this.set_button_event();
     }
 }
 
 export class MenuItems extends ContextWorkerBase {
+    save_action = new Map();
+
     view_contextmenu(event) {
+        this.set_oldAction()
         super.view_contextmenu(event);
-        let itemElement = event.target.closest('.item');
+        let itemElement = this.current_element.closest('.item');
         itemElement = itemElement.querySelector(".title-container");
-        
         let idElement = itemElement.querySelector("#id");
 
         if (idElement) {
             let id = idElement.textContent.trim();
-            this.copy_context_menu.querySelectorAll("form").forEach(element => {
+            this.context_menu.querySelectorAll("form").forEach(element => {
                 let action = element.getAttribute('action');
+                this.save_oldAction(element, action);
                 action = action.replace('#id', id);
                 element.setAttribute('action', action);
             });
         }
     }
 
-    set_button_event()
-    {
+    save_oldAction(element, oldAction)
+    { 
+        this.save_action.set(element, oldAction);
+    }
 
+    set_oldAction()
+    {
+        this.save_action.forEach((value, key, map)=>{
+            key.setAttribute("action", value);
+        });
+
+        this.save_action.clear();
+    }
+
+    close_contextmenu(event)
+    {
+        if(super.close_contextmenu(event))
+        {
+            this.set_oldAction();
+        }
     }
 }
 
@@ -104,7 +114,7 @@ export class MenuParentItem extends ContextWorkerBase {
 
     set_button_event()
     {
-        get_button("create_folder").addEventListener("click", (e)=>{
+        this.get_button("create_folder").addEventListener("click", (e)=>{
             let folder = createFolder(1, "asd");
             folder = this.parser.parseFromString(folder, "text/html").body.firstElementChild
             items.appendChild(folder); 

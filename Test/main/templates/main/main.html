@@ -4,6 +4,7 @@
 
 {% block css %}
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 {% endblock %}
 
 {% block title %}
@@ -27,15 +28,21 @@
                     <p style="display: none;" id="id">
                         {{ file_folder.IDFileFolder.id }}
                     </p>
-                    <input readonly type="text" maxlength="150" value="{{ file_folder.Title }}">
+                    {% csrf_token %}
+                    <input id="fileTitle" class="file-input" readonly type="text" maxlength="150" value="{{ file_folder.Title }}">
                 </div>
             </div>
         {% endfor %}
     </div>
 
-    <form method="POST" id="form-file" action="{% url 'file-create' %}" enctype="multipart/form-data" readonly>
+    <form method="POST" class="form-support" id="form-file" action="{% url 'file-create' %}" enctype="multipart/form-data" readonly>
         {% csrf_token %}
         <input type="file" id="id_File" name="File" />
+    </form>
+
+    <form method="POST" class="form-support" id="form-folder" action="folder-create">
+        {% csrf_token %}
+        <input type="text" name="Title" maxlength="100" required id="ID_Title">
     </form>
 
     <div class="pagination">

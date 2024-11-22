@@ -34,7 +34,12 @@ class UsernameChangeForm(forms.ModelForm):
 class FileForm(forms.ModelForm):
     class Meta:
         model = File
-        fields = ['File']
+        fields = ['IDFolder', 'File']
+
+class FolderForm(forms.ModelForm):
+    class Meta:
+        model = Folder
+        fields = ['IDFolder', 'Title']
 
 @login_required
 def main(request):
@@ -46,7 +51,7 @@ def main(request):
     paginator = Paginator(files_folders, 25)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    return render(request, 'main/main.html', {"page_obj": page_obj, "form": FileForm()})
+    return render(request, 'main/main.html', {"page_obj": page_obj, "form": FolderForm()})
 
 @login_required
 def profile(request):
@@ -67,7 +72,8 @@ def change_username(request):
 @login_required
 def delete_file_folder(request, id):
     if request.method == 'POST':
-        FileFolder.objects.filter(id=id).first().delete()
+        fileFolder = FileFolder.objects.get(id=id)
+        fileFolder.delete()
     
     return redirect('main')
 
@@ -85,8 +91,21 @@ def file_create(request):
         print(form.errors)
     return HttpResponse('Не удалось загрузить файл, попробуйте позже', status=400)
 
+@login_required
+def folder_create(request):
+    if request.method == 'POST':
+        form = FolderForm(request.POST)
+        if form.is_valid():
+            try:
+                folder_instance = form.save()
+                folder_instance.IDuser.add(request.user)
+                return HttpResponse(f'{folder_instance.IDFileFolder.id}:{folder_instance.Title}', status=200)
+            except Exception as e:
+                return HttpResponse(e, status=400)
+        print(form.errors)
+        
+    return HttpResponse('Не удалось создать папку, попробуйте позже', status=400)
 
-# Нужно доделать. Файлы скачиваются но не правильного формата и названия
 @login_required
 def download(request, id):
     if request.method == 'GET':

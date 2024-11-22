@@ -49,9 +49,6 @@ class AFileFolder(models.Model):
     def __str__(self):
         return f'{self.Path}{self.Title}'
 
-    def set_unique_name(self):
-        titles = AFileFolder.objects.filter()
-
     def save(self, *args, **kwargs)-> None:
         if self.IDFileFolder_id is None or self.IDFileFolder is None:
             fileFolder = FileFolder.objects.create()
@@ -114,16 +111,22 @@ class File(AFileFolder):
 
         self.File.name = new_file_name
 
+    def check_unique_title(self):
+        while (self.IDFolder is not None and self.IDFolder.get_files()) or File.objects.filter(IDUser=self.IDUser, IDFolder=None, Title=self.Title).exists():
+            split_filename = self.Title.split(".")
+            split_filename[0] += " (1)"
+            self.Title = ".".join(split_filename)
 
-    def save(self, *args, **kwargs):
-        self.Size = self.File.size
+    def set_values(self):
         file_title = os.path.basename(self.File.name)
 
         if self.Title == '':
             self.Title = file_title
             self.Path = f'/{self.Title}'
+        
+        self.check_unique_title()
 
-        elif self.Title != file_title:
+        if self.Title != file_title:
             self.rename_file()
             self.Path = f'/{self.Title}'
 
@@ -131,14 +134,20 @@ class File(AFileFolder):
             self.Path = f'/{self.IDFolder.Title}/{self.Title}'
             self.IDFolder.Size += self.Size
 
+    def save(self, *args, **kwargs):
+        self.Size = self.File.size
+
+        self.set_values()
         return super().save(*args, **kwargs) 
 
 
     def delete(self, *args, **kwargs):
+        path = os.path.dirname(self.File.name)
+        print(path)
+        os.remove(path)
         if self.IDFolder is not None:
             self.IDFileFolder.Size -= self.Size
 
-        os.remove(self.File.path)
         return super().delete(*args, **kwargs)
 
 class ActivityLog(models.Model):
