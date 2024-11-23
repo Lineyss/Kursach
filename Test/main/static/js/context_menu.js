@@ -6,7 +6,7 @@ class ContextWorkerBase {
     constructor(context_menu) {
         if(!context_menu)
         {
-            throw new Error("Context_menu is None")
+            console.error("Context_menu is None")
         }
 
         this.context_menu = context_menu;
@@ -15,14 +15,17 @@ class ContextWorkerBase {
 
     #get_buttons()
     {
-        let _buttons = this.context_menu.querySelectorAll("#context_menu_button")
-        _buttons.forEach(button => {
-            let name = button.getAttribute("name");
-            if (name)
-            {
-                this.#buttons.set(name, button)
-            }
-        });
+        if(this.context_menu)
+        {
+            let _buttons = this.context_menu.querySelectorAll("#context_menu_button")
+            _buttons.forEach(button => {
+                let name = button.getAttribute("name");
+                if (name)
+                {
+                    this.#buttons.set(name, button)
+                }
+            });
+        }
     }
 
     get_button(Name)
@@ -62,18 +65,13 @@ export class MenuItems extends ContextWorkerBase {
         this.set_oldAction()
         super.view_contextmenu(event);
         let itemElement = this.current_element.closest('.item');
-        itemElement = itemElement.querySelector(".title-container");
-        let idElement = itemElement.querySelector("#id");
-
-        if (idElement) {
-            let id = idElement.textContent.trim();
-            this.context_menu.querySelectorAll("form").forEach(element => {
-                let action = element.getAttribute('action');
-                this.save_oldAction(element, action);
-                action = action.replace('#id', id);
-                element.setAttribute('action', action);
-            });
-        }
+        let id = itemElement.getAttribute('id_file_folder')
+        this.context_menu.querySelectorAll("form").forEach(element => {
+            let action = element.getAttribute('action');
+            this.save_oldAction(element, action);
+            action = action.replace('#id', id);
+            element.setAttribute('action', action);
+        });
     }
 
     save_oldAction(element, oldAction)

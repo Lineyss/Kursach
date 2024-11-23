@@ -38,7 +38,7 @@
 </style>
 
 <div id="context_menu_item" class="context_menu_item">
-  <form id="context_menu_button" method="POST" name="delete" action="/file_folder/#id/delete" class="item_context_menu">
+  <form id="context_menu_button" method="POSt" name="delete" action="/file_folder/#id/delete" class="item_context_menu">
     {% csrf_token %}
     <button type="submit">Удалить</button>
   </form>
@@ -48,7 +48,8 @@
     <button type="submit">Скачать</button>
   </form>
   
-  <div id="context_menu_button" name="change" class="item_context_menu" >
+  <form id="context_menu_button" method="POST" name="change" action="/update/#id" class="item_context_menu" >
+    {% csrf_token %}
     <button type="submit">Изменить</button>
   </div>
 </div>

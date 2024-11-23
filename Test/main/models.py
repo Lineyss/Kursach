@@ -4,8 +4,6 @@ from django.db import models
 from typing import Any
 import os
 
-# Create your models here.
-
 class Teg(models.Model):
     Title = models.CharField(max_length=100, verbose_name='Название')
 
@@ -35,16 +33,35 @@ class FileFolder(models.Model):
         except File.DoesNotExist:
             return None
 
-
 class AFileFolder(models.Model):
     Path = models.CharField(default='/', verbose_name='Путь', max_length=100, blank=True, null=True)
     Title = models.CharField(verbose_name='Название', max_length=100)
     IDFileFolder = models.OneToOneField(FileFolder, on_delete=models.CASCADE, editable=False, unique=True, blank=True, null=True, verbose_name='Уникальный ID')
     Size = models.IntegerField(verbose_name='Размер', default=0, blank=True)
     Date = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False, blank=True)
+    AllowedUsers = models.ManyToManyField(User, verbose_name='Доступна пользователяи:', blank=True, null=True)
 
     class Meta:
         abstract = True
+
+    def change_title(self, count):
+        if '.' in self.Title:
+            split_filename = self.Title.rsplit(".")
+            split_filename[0] += f" ({count})"
+            self.Title = ".".join(split_filename)
+        else:
+            self.Title += f" ({count})"
+
+    def check_unique_title(self):
+        count = 1
+        if self.is_file:
+            while File.objects.filter(IDFolder=self.IDFolder, Title=self.Title).exclude(id=self.id).exists() or Folder.objects.filter(IDFolder=self.IDFolder, Title=self.Title):
+                self.change_title(count)
+                count += 1
+        else:
+            while File.objects.filter(IDFolder=self.IDFolder, Title=self.Title).exists() or Folder.objects.filter(IDFolder=self.IDFolder, Title=self.Title).exclude(id=self.id):
+                self.change_title(count)
+                count+=1
 
     def __str__(self):
         return f'{self.Path}{self.Title}'
@@ -61,8 +78,8 @@ class AFileFolder(models.Model):
         return super().delete(using, keep_parents)
 
 class Folder(AFileFolder):
-    IDUser = models.ManyToManyField(User, verbose_name='Пользователь(и)')
     IDFolder = models.ForeignKey('self', on_delete=models.CASCADE, verbose_name='Папка где хранится папка', null=True, blank=True)
+    Owner = models.ForeignKey(User, verbose_name='Владелец)', on_delete=models.CASCADE, related_name='folder_folder')
 
     is_file = False
 
@@ -73,21 +90,19 @@ class Folder(AFileFolder):
     def save(self, *args, **kwargs):
         if self.IDFolder is not None:
             self.Size += self.IDFolder.Size
-            self.Path += self.IDFolder.Path
+            self.Path = f'{self.IDFolder.Path}/{self.Title}'
         else:
             self.Size = sum(file.Size for file in File.objects.filter(IDFolder_id = self.pk))
-            self.Path = '/'
+            self.Path = f'/{self.Title}'
+
+        self.check_unique_title()
 
         return super().save(*args, **kwargs)
 
-
-def user_directory_path(instance, filename):
-    return f"uploads/{filename}"
-
 class File(AFileFolder):
-    IDUser = models.ManyToManyField(User, verbose_name='Пользователь(и)')
-    IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True)
-    File = models.FileField(upload_to=user_directory_path, verbose_name='Файл')
+    IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True, related_name='files')
+    File = models.FileField(verbose_name='Файл')
+    Owner = models.ForeignKey(User, verbose_name='Владелец', on_delete=models.CASCADE, related_name='file_folder')
     
     is_file = True
     
@@ -104,18 +119,9 @@ class File(AFileFolder):
 
         if os.path.exists(self.File.path):
             os.rename(self.File.path, new_file_path)
-        else:
-            os.remove(self.File.path)
-            file = open(new_file_path, 'x')
-            file.close()
 
         self.File.name = new_file_name
 
-    def check_unique_title(self):
-        while (self.IDFolder is not None and self.IDFolder.get_files()) or File.objects.filter(IDUser=self.IDUser, IDFolder=None, Title=self.Title).exists():
-            split_filename = self.Title.split(".")
-            split_filename[0] += " (1)"
-            self.Title = ".".join(split_filename)
 
     def set_values(self):
         file_title = os.path.basename(self.File.name)
@@ -127,7 +133,6 @@ class File(AFileFolder):
         self.check_unique_title()
 
         if self.Title != file_title:
-            self.rename_file()
             self.Path = f'/{self.Title}'
 
         if self.IDFolder is not None:
@@ -136,7 +141,6 @@ class File(AFileFolder):
 
     def save(self, *args, **kwargs):
         self.Size = self.File.size
-
         self.set_values()
         return super().save(*args, **kwargs) 
 

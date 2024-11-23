@@ -23,12 +23,15 @@ export class DragAndDrop
         event.preventDefault();
         this.dropZone.classList.remove('highlight');
         let files = event.dataTransfer.files;
-        for(let i = 0; i < files.length; i ++){
+        if (files)
+        {
+            for(let i = 0; i < files.length; i ++){
             let dataTransfer = new DataTransfer()
             dataTransfer.items.add(files.item(i));
-            this.fileInput.files = dataTransfer.files;
-            const event = new Event('change');
-            this.fileInput.dispatchEvent(event);
+                this.fileInput.files = dataTransfer.files;
+                const event = new Event('change');
+                this.fileInput.dispatchEvent(event);
+            }
         }
     }
 

@@ -34,24 +34,41 @@ class UsernameChangeForm(forms.ModelForm):
 class FileForm(forms.ModelForm):
     class Meta:
         model = File
-        fields = ['IDFolder', 'File']
+        fields = ['IDFolder', 'File', 'Owner']
 
 class FolderForm(forms.ModelForm):
     class Meta:
         model = Folder
-        fields = ['IDFolder', 'Title']
+        fields = ['IDFolder', 'Title', 'Owner']
 
 @login_required
-def main(request):
-    files = File.objects.filter(IDUser=request.user)
-    folders = Folder.objects.filter(IDUser=request.user)
+def main(request, path='/'):
+    IDFolder = None
+
+    if path != '/':
+        path = '/' + path
+        try:
+            IDFolder = Folder.objects.get(Path=path)
+        except:
+            return render(request, 'main/main.html', {'error_message': 'Такой директории не существует', "path": path})
+
+    files = File.objects.filter(Owner=request.user, IDFolder = IDFolder)
+    folders = Folder.objects.filter(Owner=request.user, IDFolder = IDFolder)
 
     files_folders = list(files) + list(folders)
 
     paginator = Paginator(files_folders, 25)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    return render(request, 'main/main.html', {"page_obj": page_obj, "form": FolderForm()})
+
+    file_form = FileForm(initial={"Owner": request.user, 'IDFolder': IDFolder})
+    folder_form = FolderForm(initial={"Owner": request.user, 'IDFolder': IDFolder})
+    
+    return render(request, 'main/main.html', {"page_obj": page_obj, 
+                                              "file_form": file_form, 
+                                              "folder_form": folder_form, 
+                                              "path": path,
+                                              'error_message': ''})
 
 @login_required
 def profile(request):
@@ -69,13 +86,49 @@ def change_username(request):
 
     return render(request, 'main/profile_form.html', {'form': form})
 
+# Перетаскивать файл между папками
+# Добавлнеие тега на файл/папку
+# Поделится 
+# Доделать графики
+## Добавить возоможность смотреть график по временным отрезкам
+### Создать еще какой-то график
+# Скачивание бекапа базы данных
+# Открытие файла (если будет желание)
+# Скачивание папко / не давать возможность скачивай файлы
+
 @login_required
 def delete_file_folder(request, id):
     if request.method == 'POST':
-        fileFolder = FileFolder.objects.get(id=id)
-        fileFolder.delete()
-    
-    return redirect('main')
+        try:
+            fileFolder = FileFolder.objects.get(id=id)
+            fileFolder.delete()
+            return HttpResponse(status=200)
+        except:
+            return HttpResponse('Не удалось удалить, попробуйте позже =(', status=400)
+    return HttpResponse(status=400)
+
+@login_required
+def update_file_folder_name(request, id, title):
+    if request.method == 'POST':
+        if title:
+            try:
+                fileFolder = FileFolder.objects.get(id=id)
+                file = fileFolder.get_related_file()
+                folder = fileFolder.get_related_folder()
+
+                if file:
+                    file.Title  = title
+                    file.save()
+                elif folder:
+                    folder.Title = title
+                    folder.save()
+
+                return HttpResponse(f'{fileFolder.id}:{title}', status=200)
+
+            except:
+                return HttpResponse('Не удалось изменить название, попробуйте позже =(', status=400)
+        
+    return HttpResponse(status=400)
 
 @login_required
 def file_create(request):
@@ -84,21 +137,19 @@ def file_create(request):
         if form.is_valid():
             try:
                 file_instance = form.save()
-                file_instance.IDUser.add(request.user)
-                return HttpResponse(f'{file_instance.IDFileFolder.id}: {file_instance.Title}', status=200)
+                return HttpResponse(f'{file_instance.IDFileFolder.id}:{file_instance.Title}', status=200)
             except Exception as e:
                 return HttpResponse(e, status=400)
         print(form.errors)
     return HttpResponse('Не удалось загрузить файл, попробуйте позже', status=400)
 
 @login_required
-def folder_create(request):
+def folder_create(request):     
     if request.method == 'POST':
         form = FolderForm(request.POST)
         if form.is_valid():
             try:
                 folder_instance = form.save()
-                folder_instance.IDuser.add(request.user)
                 return HttpResponse(f'{folder_instance.IDFileFolder.id}:{folder_instance.Title}', status=200)
             except Exception as e:
                 return HttpResponse(e, status=400)

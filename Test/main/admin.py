@@ -9,7 +9,7 @@ from .models import *
 
 @admin.register(Teg)
 class TegAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'Title', )
+    list_display = ('id', 'Title',)
     list_display_links = ('id', )
     search_fields = ('Title', 'id', )
     list_editable = ('Title', )
@@ -29,22 +29,24 @@ class FileFolderAdmin(ImportExportModelAdmin):
 
 @admin.register(Folder)
 class FolderAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'IDFileFolder', 'IDFolder', 'Title', 'Size', 'Date', )
+    list_display = ('id', 'IDFileFolder', 'IDFolder', 'Title', 'Size', 'Date', 'Path',)
     list_display_links = ('id',)
-    search_fields = ('id', 'Title', 'Size', 'Date', )
+    search_fields = ('id', 'Title', 'Size', 'Date', 'Path',)
     list_editable = ('Title', )
-    list_filter = ('IDUser', 'IDFolder', 'Date', )
-    fields = ('IDFolder', 'IDUser', 'Title')
-    
+    list_filter = ('Owner', 'IDFolder', 'Date', 'Path',)
+    fields = ('IDFolder', 'Owner', 'Title', 'AllowedUsers', )
 
 @admin.register(File)
 class FileAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'IDFileFolder', 'IDFolder', 'Title', 'Size', 'Date', )
+    list_display = ('id', 'IDFileFolder', 'IDFolder', 'Title', 'Size', 'Date', 'Path',)
     list_display_links = ('id',)
-    search_fields = ('id', 'Title', 'Size', 'Date', )
+    search_fields = ('id', 'Title', 'Size', 'Date', 'Path',)
     list_editable = ('Title', )
-    list_filter = ('IDUser', 'IDFolder', 'Date', )
-    fields = ('IDFolder', 'IDUser', 'File')
+    list_filter = ('Owner', 'IDFolder', 'Date', 'Path',)
+    fields = ('IDFolder', 'File', 'Owner', 'AllowedUsers', )
+
+    def save_model(self, request, obj, form, change):
+        return super().save_model(request, obj, form, change)
 
 @admin.register(ActivityLog)
 class ActivityLogAdmin(ImportExportModelAdmin):
