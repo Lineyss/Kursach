@@ -1,22 +1,23 @@
-from django.http import HttpRequest
-from django.template.response import TemplateResponse
 from import_export.admin import ImportExportModelAdmin
-from django.db.models import Count
 from django.contrib import admin
+from .forms import TegForm
 from .models import *
 
 # Register your models here.
-
 @admin.register(Teg)
 class TegAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'Title',)
+    form = TegForm
+    list_display = ('id', 'Title', 'Color', 'IDUser',)
+    search_fields = ('Title', 'id', 'IDUser',)
+    list_filter = ('Title', 'IDUser',)
+    list_editable = ('Title', 'Color',)
     list_display_links = ('id', )
-    search_fields = ('Title', 'id', )
-    list_editable = ('Title', )
 
 @admin.register(FileFolder)
 class FileFolderAdmin(ImportExportModelAdmin):
     change_list_template = 'admin/user_summary.html'
+
+    list_display = ('id', 'IDTeg', )
 
     def getDataForStats(self, model):
         return model.objects.count()
@@ -56,16 +57,10 @@ class ActivityLogAdmin(ImportExportModelAdmin):
     list_editable = ('Action', )
     list_filter = ('IDUser', 'IDFileFolder', 'Date', )
 
-@admin.register(Premission)
-class PremissionAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'Title', )
-    list_display_links = ('id',)
-    search_fields = ('id', 'Title', )
-    list_editable = ('Title', )
-
 @admin.register(SharedURI)
 class SharedURIAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'IDSender', 'IDPremission', 'UrlAddress', 'DateCreate', 'DateDelete')
+    list_display = ('id', 'IDSender', 'Premissions', 'Token', 'DateCreate', 'DateDelete')
     list_display_links = ('id',)
-    search_fields = ('id', 'UrlAddress', )
-    list_filter = ('DateCreate', 'DateDelete', 'IDSender', 'IDPremission')
+    search_fields = ('id', 'Token', )
+    list_filter = ('DateCreate', 'DateDelete', 'IDSender', 'Premissions', )
+    fields = ('IDSender', 'Premissions', 'IDFileFolder', )

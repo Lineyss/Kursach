@@ -1,21 +1,31 @@
+from guardian.shortcuts import assign_perm, get_objects_for_user
+from django.core.management.utils import get_random_secret_key
+from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User
 from datetime import timedelta
 from django.db import models
 from typing import Any
+import datetime as dt
 import os
 
 class Teg(models.Model):
-    Title = models.CharField(max_length=100, verbose_name='Название')
+    Title = models.CharField(max_length=10, verbose_name='Название')
+    Color = models.CharField(max_length=7, default='#FFFFFF', verbose_name='Цвет')
+    IDUser = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Принадлежит')
+    DateTime = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False, blank=True)
 
     class Meta:
         verbose_name = "Тег"
         verbose_name_plural = 'Теги'
 
+    def __str__(self) -> str:
+        return self.Title.__str__() 
+
 class FileFolder(models.Model):
     IDTeg = models.ForeignKey(Teg, verbose_name='Тег', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
-        return f'{self.pk}'
+        return f'{self.get_file_or_folder().Path}'
     
     class Meta:
         verbose_name = "Идентификатор файлов и папок"
@@ -32,6 +42,13 @@ class FileFolder(models.Model):
             return self.file
         except File.DoesNotExist:
             return None
+        
+    def get_file_or_folder(self):
+        obj = self.get_related_file()
+        if obj is None:
+            obj = self.get_related_folder()
+
+        return obj
 
 class AFileFolder(models.Model):
     Path = models.CharField(default='/', verbose_name='Путь', max_length=100, blank=True, null=True)
@@ -43,6 +60,12 @@ class AFileFolder(models.Model):
 
     class Meta:
         abstract = True
+        permissions = [
+            ("delete", "Can delete own object"),
+            ("update", "Can change name own object"),
+            ("open", "Can open own object"),
+            ("download", "Can download open own object")
+        ]
 
     def change_title(self, count):
         if '.' in self.Title:
@@ -88,6 +111,10 @@ class Folder(AFileFolder):
         verbose_name_plural = 'Папки'
 
     def save(self, *args, **kwargs):
+        
+        
+        self.check_unique_title()
+        
         if self.IDFolder is not None:
             self.Size += self.IDFolder.Size
             self.Path = f'{self.IDFolder.Path}/{self.Title}'
@@ -95,9 +122,14 @@ class Folder(AFileFolder):
             self.Size = sum(file.Size for file in File.objects.filter(IDFolder_id = self.pk))
             self.Path = f'/{self.Title}'
 
-        self.check_unique_title()
 
-        return super().save(*args, **kwargs)
+        save = super().save(*args, **kwargs)
+
+        permissions = Permission.objects.filter(content_type__model='Folder')
+        for perm in permissions:
+            assign_perm(perm.name, self.Owner, self)
+
+        return save
 
 class File(AFileFolder):
     IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True, related_name='files')
@@ -142,12 +174,18 @@ class File(AFileFolder):
     def save(self, *args, **kwargs):
         self.Size = self.File.size
         self.set_values()
-        return super().save(*args, **kwargs) 
+
+        save = super().save(*args, **kwargs)
+        
+        permissions = Permission.objects.filter(content_type__model='File')
+        for perm in permissions:
+            assign_perm(perm.name, self.Owner, self)
+
+        return save
 
 
     def delete(self, *args, **kwargs):
         path = os.path.dirname(self.File.name)
-        print(path)
         os.remove(path)
         if self.IDFolder is not None:
             self.IDFileFolder.Size -= self.Size
@@ -164,24 +202,19 @@ class ActivityLog(models.Model):
         verbose_name = "Логи"
         verbose_name_plural = 'Логи'
 
-class Premission(models.Model):
-    Title = models.CharField(max_length=50 ,verbose_name='Название')
-
-    class Meta:
-        verbose_name = "Права доступа"
-        verbose_name_plural = 'Права доступа'
-
 class SharedURI(models.Model):
     IDSender = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Создатель ссылки')
-    IDPremission = models.ForeignKey(Premission, on_delete=models.CASCADE, verbose_name='Права')
+    Premissions = models.CharField(max_length=100)
     IDFileFolder = models.ForeignKey(FileFolder, on_delete=models.CASCADE, verbose_name='Папка/Файл')
-    UrlAddress = models.CharField(max_length=50, verbose_name='Ссылка')
-    DateCreate = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False)
-    DateDelete = models.DateTimeField(verbose_name='Дата деактивации', blank=True, null=True, editable=False)
+    Token = models.CharField(max_length=50, verbose_name='Токен', editable=False, blank=True, default=get_random_secret_key())
+    DateCreate = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', blank=True, editable=False)
+    DateDelete = models.DateTimeField(verbose_name='Дата деактивации', blank=True, editable=False)
 
     def save(self, *args, **kwargs):
-        self.DateDelete = self.DateCreate + timedelta(hours=1)
-        super().save(*args, **kwargs)
+        if self.pk is None:
+            self.DateDelete = timedelta(hours=1) + dt.datetime.now()
+        
+        return super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Ссылка доступа"

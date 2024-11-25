@@ -5,6 +5,12 @@ body {
     background-color: #f4f4f4;
 }
 
+.step-links a 
+{
+    color: black !important;
+    margin:0 5px ;
+}
+
 a 
 {
     color: #fff;

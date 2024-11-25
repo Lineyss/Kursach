@@ -1,4 +1,4 @@
-export const sendRequest = async (url, 
+export const sendRequest = (url, 
     body, 
     method, 
     isAsync, 
@@ -23,7 +23,7 @@ export const sendRequest = async (url,
         alert("Не предвиденная ошибка, попробуйте позже.")
     };
 
-    httpRequest.open(method, url, isAsync);
+    httpRequest.open(method, url);
     if (responseType) httpRequest.responseType = responseType;
     if (header) httpRequest.setRequestHeader(header, value);
     httpRequest.send(body);

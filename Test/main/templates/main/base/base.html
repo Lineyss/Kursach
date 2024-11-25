@@ -18,6 +18,9 @@
         </title>
     </head>
     <body>
+        {% block load %}
+
+        {% endblock %}
         {% include "components/header.html" %}
         
         <div class="content-conatiner">
@@ -27,6 +30,7 @@
                 {% endblock %}
             </div>
         </div>
+        
     </body>
     {% block js %}
 

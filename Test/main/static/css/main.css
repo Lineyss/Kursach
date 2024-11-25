@@ -4,6 +4,7 @@
     min-height: 90%;
     display: flex;
     flex-wrap: wrap;
+    align-content: start;
 }
 
 .item
@@ -171,3 +172,100 @@
     background-color: #218838;
 }
 
+.content-main
+{
+    width: 99%;
+    height: 100%;
+}
+
+.add-teg
+{
+    padding: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.teg-container
+{
+    width: 20%;
+    height: 100%;
+}
+
+.content 
+{
+    display: flex;
+}
+
+.content-conatiner2
+{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.tegs
+{
+    display: flex;
+    flex-wrap: wrap;
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 30%;
+}
+
+.tag-card
+{
+    margin-bottom: 10px;
+    margin-right: 10px;
+    min-width: 65px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+    border: 2px solid white;
+    padding: 5px;
+    margin: 5px;
+}
+
+.tag-card:hover
+{
+    border: 2px solid black;
+    cursor: pointer;
+}
+
+.select-teg
+{
+    border: 2px solid black;
+    cursor: pointer;
+}
+
+.bookmark
+{
+    width: 70%;
+    height: 70%;
+    border: 1px solid black;
+}
+
+.tag-title
+{
+    width: 100%;
+    height: 25%;
+    text-align: center;
+}
+
+.teg-file-folder
+{
+    border: 1px solid black;
+    width: 20px;
+    height: 20px;
+    margin-left: 5px;
+}
+
+.tegs-container
+{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+}

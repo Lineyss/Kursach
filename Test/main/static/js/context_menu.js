@@ -1,14 +1,15 @@
-class ContextWorkerBase {
+export class ContextWorkerBase {
     #buttons = new Map();
     items = [];
     current_element = null;
 
-    constructor(context_menu) {
+    constructor(context_menu, id_for_button) {
         if(!context_menu)
         {
             console.error("Context_menu is None")
         }
 
+        this.id_for_button = id_for_button;
         this.context_menu = context_menu;
         this.#get_buttons();
     }
@@ -17,7 +18,7 @@ class ContextWorkerBase {
     {
         if(this.context_menu)
         {
-            let _buttons = this.context_menu.querySelectorAll("#context_menu_button")
+            let _buttons = this.context_menu.querySelectorAll(`#${this.id_for_button}`)
             _buttons.forEach(button => {
                 let name = button.getAttribute("name");
                 if (name)
@@ -98,7 +99,6 @@ export class MenuItems extends ContextWorkerBase {
 }
 
 export class MenuParentItem extends ContextWorkerBase {
-    parser = new DOMParser();
     view_contextmenu(event) {
         for(let i = 0; i < this.items.length; i++)
         {
@@ -108,14 +108,5 @@ export class MenuParentItem extends ContextWorkerBase {
                 break;
             }
         }
-    }
-
-    set_button_event()
-    {
-        this.get_button("create_folder").addEventListener("click", (e)=>{
-            let folder = createFolder(1, "asd");
-            folder = this.parser.parseFromString(folder, "text/html").body.firstElementChild
-            items.appendChild(folder); 
-        });
     }
 }
