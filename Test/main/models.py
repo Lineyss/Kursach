@@ -1,25 +1,40 @@
-from guardian.shortcuts import assign_perm, get_objects_for_user
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.management.utils import get_random_secret_key
+from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import Permission
-from django.contrib.auth.models import User
+from guardian.shortcuts import assign_perm
+from decimal import Decimal, ROUND_DOWN
 from datetime import timedelta
 from django.db import models
 from typing import Any
 import datetime as dt
 import os
 
+class UserSite(AbstractUser):
+    CurrentSize = models.FloatField(default=0, verbose_name='Занятое место (гб)',blank=True, 
+        validators=[MinValueValidator(0)])
+    
+    MaxSize = models.IntegerField(default=30, verbose_name='Доступное место (гб)', blank=True, 
+        validators=[MinValueValidator(0)]) 
+
+    class Meta:
+        verbose_name = 'Пользовтель'
+        verbose_name_plural = 'Пользователи'
+    
+    def save(self, *args, **kwargs):
+        self.CurrentSize = float(Decimal(self.CurrentSize).quantize(Decimal('0.001'), rounding=ROUND_DOWN))
+        super().save(*args, **kwargs)
+
 class Teg(models.Model):
     Title = models.CharField(max_length=10, verbose_name='Название')
     Color = models.CharField(max_length=7, default='#FFFFFF', verbose_name='Цвет')
-    IDUser = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Принадлежит')
+    IDUser = models.ForeignKey(UserSite, on_delete=models.CASCADE, verbose_name='Принадлежит')
     DateTime = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False, blank=True)
 
     class Meta:
         verbose_name = "Тег"
         verbose_name_plural = 'Теги'
-
-    def __str__(self) -> str:
-        return self.Title.__str__() 
 
 class FileFolder(models.Model):
     IDTeg = models.ForeignKey(Teg, verbose_name='Тег', on_delete=models.SET_NULL, null=True, blank=True)
@@ -56,7 +71,7 @@ class AFileFolder(models.Model):
     IDFileFolder = models.OneToOneField(FileFolder, on_delete=models.CASCADE, editable=False, unique=True, blank=True, null=True, verbose_name='Уникальный ID')
     Size = models.IntegerField(verbose_name='Размер', default=0, blank=True)
     Date = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания', editable=False, blank=True)
-    AllowedUsers = models.ManyToManyField(User, verbose_name='Доступна пользователяи:', blank=True, null=True)
+    AllowedUsers = models.ManyToManyField(UserSite, verbose_name='Доступна пользователяи:', blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -102,7 +117,7 @@ class AFileFolder(models.Model):
 
 class Folder(AFileFolder):
     IDFolder = models.ForeignKey('self', on_delete=models.CASCADE, verbose_name='Папка где хранится папка', null=True, blank=True)
-    Owner = models.ForeignKey(User, verbose_name='Владелец)', on_delete=models.CASCADE, related_name='folder_folder')
+    Owner = models.ForeignKey(UserSite, verbose_name='Владелец)', on_delete=models.CASCADE, related_name='folder_folder')
 
     is_file = False
 
@@ -134,7 +149,7 @@ class Folder(AFileFolder):
 class File(AFileFolder):
     IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True, related_name='files')
     File = models.FileField(verbose_name='Файл')
-    Owner = models.ForeignKey(User, verbose_name='Владелец', on_delete=models.CASCADE, related_name='file_folder')
+    Owner = models.ForeignKey(UserSite, verbose_name='Владелец', on_delete=models.CASCADE, related_name='file_folder')
     
     is_file = True
     
@@ -171,8 +186,21 @@ class File(AFileFolder):
             self.Path = f'/{self.IDFolder.Title}/{self.Title}'
             self.IDFolder.Size += self.Size
 
+    def bits_to_gb(self, bits):
+        bytes_value = bits / 8
+        gb_value = bytes_value / (1024 ** 3)
+        return gb_value
+
     def save(self, *args, **kwargs):
         self.Size = self.File.size
+        gb = self.bits_to_gb(self.Size)
+
+        if self.Owner.CurrentSize + gb > self.Owner.MaxSize:
+            raise ValidationError('Не хватает места')
+        else:
+            self.Owner.CurrentSize += gb
+            self.Owner.save()
+
         self.set_values()
 
         save = super().save(*args, **kwargs)
@@ -180,6 +208,7 @@ class File(AFileFolder):
         permissions = Permission.objects.filter(content_type__model='File')
         for perm in permissions:
             assign_perm(perm.name, self.Owner, self)
+
 
         return save
 
@@ -193,7 +222,7 @@ class File(AFileFolder):
         return super().delete(*args, **kwargs)
 
 class ActivityLog(models.Model):
-    IDUser = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    IDUser = models.ForeignKey(UserSite, on_delete=models.CASCADE, verbose_name='Пользователь')
     IDFileFolder = models.ForeignKey(FileFolder, on_delete=models.CASCADE, verbose_name='Файл/папка')
     Action = models.CharField(max_length=100, verbose_name='Действие')
     Date = models.DateTimeField(auto_now_add=True, verbose_name='Дата')
@@ -202,8 +231,30 @@ class ActivityLog(models.Model):
         verbose_name = "Логи"
         verbose_name_plural = 'Логи'
 
+class DownloadURL(models.Model):
+    Owner = models.ForeignKey(UserSite, verbose_name='Создатель ссылки', on_delete=models.CASCADE)
+    IDFileFolder = models.ForeignKey(FileFolder, models.CASCADE, verbose_name='Файл/Папка', unique=True,)
+    Token = models.CharField(max_length=50, verbose_name='Токен', blank=True, editable=True)
+
+    def forView(self, Path):
+        self.Path = Path
+
+    def save(self, *args, **kwargs):
+        try:
+            url = DownloadURL.objects.get(IDFileFolder = self.IDFileFolder)
+            url.delete()
+        except:
+            pass
+
+        self.Token = get_random_secret_key()
+        return super().save(*args, **kwargs)
+    
+    class Meta:
+        verbose_name = 'Ссылка для скачивания'
+        verbose_name_plural = 'Ссылки для скачивания'
+
 class SharedURI(models.Model):
-    IDSender = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Создатель ссылки')
+    IDSender = models.ForeignKey(UserSite, on_delete=models.CASCADE, verbose_name='Создатель ссылки')
     Premissions = models.CharField(max_length=100)
     IDFileFolder = models.ForeignKey(FileFolder, on_delete=models.CASCADE, verbose_name='Папка/Файл')
     Token = models.CharField(max_length=50, verbose_name='Токен', editable=False, blank=True, default=get_random_secret_key())

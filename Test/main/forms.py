@@ -21,7 +21,7 @@ class SingUp(CreateView):
 
 class UsernameChangeForm(forms.ModelForm):
     class Meta:
-        model = User
+        model = UserSite
         fields = ['username']
     
     def clean_username(self):

@@ -155,7 +155,15 @@ const convertInnerHTMLToDOMElement = (innerHtml) => {
 const WorkChangeName = (item, finalFunction) => {
     const input = item.querySelector(".file-input");
     input.readOnly = false;
-    input.select();
+    let position = input.value.indexOf(".");
+    if(position != -1)
+    {
+        input.setSelectionRange(0, position);
+    }
+    else
+    {
+        input.select();
+    }
     input.focus();
     
     input.addEventListener("keydown", (e) => {

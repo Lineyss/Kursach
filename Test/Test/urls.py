@@ -29,6 +29,3 @@ urlpatterns = [
     path('', include('main.main_urls')),
     path('account', include('main.account_urls'))
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

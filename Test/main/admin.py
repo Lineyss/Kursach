@@ -64,3 +64,17 @@ class SharedURIAdmin(ImportExportModelAdmin):
     search_fields = ('id', 'Token', )
     list_filter = ('DateCreate', 'DateDelete', 'IDSender', 'Premissions', )
     fields = ('IDSender', 'Premissions', 'IDFileFolder', )
+
+@admin.register(DownloadURL)
+class DownloadURLAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'IDFileFolder', 'Token', 'Owner',)
+    list_display_links = ('id',)
+    search_fields = ('id', 'Token', )
+    fields = ('IDFileFolder', )
+
+@admin.register(UserSite)
+class UserSiteAdmin(ImportExportModelAdmin):
+    list_display = ('id', 'username', 'is_superuser','CurrentSize', 'MaxSize',)
+    list_display_links = ('id', )
+    search_fields = ('id', 'username', )
+    list_editable = ('is_superuser', 'username', 'MaxSize')

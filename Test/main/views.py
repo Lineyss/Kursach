@@ -1,16 +1,15 @@
-from guardian.shortcuts import assign_perm, get_objects_for_user
 from django.http import HttpResponse, FileResponse, JsonResponse, HttpResponseForbidden
+from guardian.shortcuts import assign_perm, get_objects_for_user
 from django.contrib.auth.decorators import login_required
 from .models import Folder, File, FileFolder, Teg
 from django.contrib.auth.models import Permission
 from django.shortcuts import render, redirect
 from django.core.paginator import Paginator
 from django.http import HttpResponse
+from urllib.parse import unquote
 from django.conf import settings
 from .forms import *
 import zipfile
-
-# Create your views here.
 
 @login_required
 def main(request, path='/'):
@@ -82,7 +81,10 @@ def main_available(request, path='/'):
 
 @login_required
 def profile(request):
-    return render(request, 'main/profile_main.html')
+    urls = DownloadURL.objects.filter(Owner=request.user)
+    for url in urls:
+        url.forView(url.IDFileFolder.get_related_file().Path)
+    return render(request, 'main/profile_main.html', {'action_links': urls})
 
 @login_required
 def change_username(request):
@@ -296,38 +298,78 @@ def addFilesToZip(zip, parent_folder):
         addFilesToZip(zip, folder)
 
 @login_required
-def download(request, id):
+def download_req(request, id):
     if request.method == 'GET':
-        path = None
-        
-        file_folder = FileFolder.objects.filter(id=id).first() 
-        file = file_folder.get_related_file()
+        return download(request, id)
+    return HttpResponse(status=400)
 
-        if file is None:
-            file = file_folder.get_related_folder()
+@login_required
+def download_token(request, token):
+    if request.method == 'GET':
+        token = unquote(token)
+        try:
+            url = DownloadURL.objects.get(Token=token)
+            return download(request,url.IDFileFolder.id, True)
+        except:
+            return HttpResponse(status=400)
+    return HttpResponse(status=400)
 
+def download(request, id, from_url=False):
+    path = None
+    
+    file_folder = FileFolder.objects.filter(id=id).first() 
+    file = file_folder.get_related_file()
+
+    if file is None:
+        file = file_folder.get_related_folder()
+        if not from_url:
             if not request.user.has_perm('download', file):
                 return HttpResponseForbidden("У вас нет прав для скачивания этой папки.")
-            
-            file.Title += ".zip"
-            zip_path = settings.ZIP_DIR / file.Title
+        file.Title += ".zip"
+        zip_path = settings.ZIP_DIR / file.Title
 
-            if os.path.exists(zip_path):
-                os.remove(zip_path)
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
 
-            with zipfile.ZipFile(zip_path, 'w') as zip:
-                addFilesToZip(zip, file)
+        with zipfile.ZipFile(zip_path, 'w') as zip:
+            addFilesToZip(zip, file)
 
-            path = zip_path
-        else:
-            if not request.user.has_perm('download', file):
-                return HttpResponseForbidden("У вас нет прав для скачивания этого файла.")
-            path = file.File.path
-
-        file_download = open(path, "rb")
-        response = FileResponse(file_download)
-        response['Content-Disposition'] = f'attachment; filename="{file.Title}"'
-                
-        return response
+        path = zip_path
     else:
-        return HttpResponse('Не удалось найти файл =(', status=400)
+        if not request.user.has_perm('download', file):
+            return HttpResponseForbidden("У вас нет прав для скачивания этого файла.")
+        path = file.File.path
+
+    file_download = open(path, "rb")
+    response = FileResponse(file_download)
+    response['Content-Disposition'] = f'attachment; filename="{file.Title}"'
+            
+    return response
+
+@login_required
+def create_download_links(request, id):
+    if request.method == 'POST':
+        file_folder = FileFolder.objects.filter(id=id).first()
+        file = file_folder.get_file_or_folder()
+        if not request.user.has_perm('download', file):
+            return HttpResponseForbidden("У вас нет прав для скачивания этой папки.")
+        url = DownloadURL(Owner=request.user, IDFileFolder=file_folder)
+        url.save()
+        return redirect('profile')
+    return HttpResponse(status=400)
+
+@login_required
+def delete_download_links(request):
+    if request.method == 'POST':
+        url = None
+        token = request.POST.get('token')
+        try:
+            url = DownloadURL.objects.get(Owner=request.user, Token=token)
+        except:
+            return HttpResponse("Такой ссылки нету", status=400)
+        
+        url.delete()
+
+        return redirect('profile')
+    
+    return HttpResponse(status=400)

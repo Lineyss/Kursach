@@ -10,100 +10,94 @@
     Главная
 {% endblock %}
 
-{% block load %}
-    {% include 'components/load.html' %}
-{% endblock %}
-
 {% block content %}
-    <div class="content-conatiner2">
-        <div class="content-main">
-            <div class="path-contentiner">
-                <button class="back-button">&#8592;</button>
-                <div id="path-form">
-                    <input id="path" placeholder="Путь" style="padding-left: 5px;" value="{{ path }}">
-                    <button type="submit">
-                        Отправить
-                    </button>
-                </div>
+    <div class="content-main">
+        <div class="path-contentiner">
+            <button class="back-button">&#8592;</button>
+            <div id="path-form">
+                <input id="path" placeholder="Путь" style="padding-left: 5px;" value="{{ path }}">
+                <button type="submit">
+                    Отправить
+                </button>
             </div>
-            
-            {% if error_message == '' %}
-            <div id="drop-zone" class="items">
-                {% for file_folder in page_obj %}
-                <div class="item" is_file="{{file_folder.is_file}}" id_file_folder="{{ file_folder.IDFileFolder.id }}" draggable="True">
-                    <div class="tegs-container">
-                        <button class="button add-teg">+</button>
-                        {% if file_folder.IDFileFolder.IDTeg != None %}
-                            <div title=" {{file_folder.IDFileFolder.IDTeg.Title}}" class="teg-file-folder" style="background: {{file_folder.IDFileFolder.IDTeg.Color}};"></div>
-                        {% endif %}
-                    </div>
-                    <div class="image-container">
-                        <img draggable="False"
-                        {% if file_folder.is_file %}
-                        src="{% static 'images/file-icon.svg' %}"
-                        {% else %}
-                        src="{% static 'images/folder-icon.svg' %}"
-                        {% endif %}
-                        />
-                    </div>
-                    <div class="title-container">
-                        <input id="fileTitle" class="file-input" readonly type="text" maxlength="150" value="{{ file_folder.Title }}">
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            
-            <form method="POST" action="{% url 'file-create' %}" enctype="multipart/form-data" class="form-support" id="form-file-create">
-                {% csrf_token %}
-                {{ file_form }}
-            </form>
-            
-            <form method="POST" action="{% url 'folder-create' %}" class="form-support" id="form-folder-create">
-                {% csrf_token %}
-                {{ folder_form }}
-            </form>
-            
-            <form method="POST" action="/move" class="form-support" id="form-move-file-folder">
-                {% csrf_token %}
-            </form>
-
-            <form method="POST" action="/teg/add" class="form-support" id="add-teg-file-folder">
-                {% csrf_token %}
-            </form>
-            
-            <div class="pagination">
-                <span class="step-links">
-                    {% if page_obj.has_previous %}
-                    <a class="step" href="?page=1">&laquo; first</a>
-                    <a class="step" href="?page={{ page_obj.previous_page_number }}">previous</a>
-                    {% endif %}
-                    
-                    <span class="current">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-                    </span>
-                    
-                    {% if page_obj.has_next %}
-                    <a class="step" href="?page={{ page_obj.next_page_number }}">next</a>
-                    <a class="step" href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-                    {% endif %}
-                </span>
-            </div>
-            
-            {% include 'components/context_menu_item.html' %}
-            {% include 'components/context_menu_parent_items.html' %}
-
-            {% else %}
-            <h2>{{error_message}}</h2>
-            {% endif %}
         </div>
-        <div class="tegs">
-            {% for teg in tegs %}
-                <div class="tag-card" id="{{teg.id}}">
-                    <div class="bookmark" style="background: {{teg.Color}};"></div>
-                    <div class="tag-title" title="{{teg.Title}}">{{teg.Title}}</div>
+        
+        {% if error_message == '' %}
+        <div id="drop-zone" class="items">
+            {% for file_folder in page_obj %}
+            <div class="item" is_file="{{file_folder.is_file}}" id_file_folder="{{ file_folder.IDFileFolder.id }}" draggable="True">
+                <div class="tegs-container">
+                    <button class="button add-teg">+</button>
+                    {% if file_folder.IDFileFolder.IDTeg != None %}
+                        <div title=" {{file_folder.IDFileFolder.IDTeg.Title}}" class="teg-file-folder" style="background: {{file_folder.IDFileFolder.IDTeg.Color}};"></div>
+                    {% endif %}
                 </div>
+                <div class="image-container">
+                    <img draggable="False"
+                    {% if file_folder.is_file %}
+                    src="{% static 'images/file-icon.svg' %}"
+                    {% else %}
+                    src="{% static 'images/folder-icon.svg' %}"
+                    {% endif %}
+                    />
+                </div>
+                <div class="title-container">
+                    <input id="fileTitle" class="file-input" readonly type="text" maxlength="150" value="{{ file_folder.Title }}">
+                </div>
+            </div>
             {% endfor %}
         </div>
+        
+        <form method="POST" action="{% url 'file-create' %}" enctype="multipart/form-data" class="form-support" id="form-file-create">
+            {% csrf_token %}
+            {{ file_form }}
+        </form>
+        
+        <form method="POST" action="{% url 'folder-create' %}" class="form-support" id="form-folder-create">
+            {% csrf_token %}
+            {{ folder_form }}
+        </form>
+        
+        <form method="POST" action="/move" class="form-support" id="form-move-file-folder">
+            {% csrf_token %}
+        </form>
+
+        <form method="POST" action="/teg/add" class="form-support" id="add-teg-file-folder">
+            {% csrf_token %}
+        </form>
+        
+        <div class="pagination">
+            <span class="step-links">
+                {% if page_obj.has_previous %}
+                <a class="step" href="?page=1">&laquo; first</a>
+                <a class="step" href="?page={{ page_obj.previous_page_number }}">previous</a>
+                {% endif %}
+                
+                <span class="current">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a class="step" href="?page={{ page_obj.next_page_number }}">next</a>
+                <a class="step" href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+        
+        {% include 'components/context_menu_item.html' %}
+        {% include 'components/context_menu_parent_items.html' %}
+
+        {% else %}
+        <h2>{{error_message}}</h2>
+        {% endif %}
+    </div>
+    <div class="tegs">
+        {% for teg in tegs %}
+            <div class="tag-card" id="{{teg.id}}">
+                <div class="bookmark" style="background: {{teg.Color}};"></div>
+                <div class="tag-title" title="{{teg.Title}}">{{teg.Title}}</div>
+            </div>
+        {% endfor %}
     </div>
 {% endblock %}
         
