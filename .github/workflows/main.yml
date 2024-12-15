@@ -1,20 +1,19 @@
-name: Flake8 Linter
+name: Kursach test lol kek eshkere
 
 on:
-  pull_request:
   push:
     branches:
       - main
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
+  first_job:
+    runs-on: ubuntu-aplin
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
       with:
-        submodules: 'recursive'  # Добавляем эту строку для подмодулей
+        submodules: 'recursive'
 
     - name: Set up Python 3.12.4
       uses: actions/setup-python@v4
@@ -28,4 +27,4 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        flake8 . --count --show-source --statistics --select=E9,F63,F7 --ignore=E501,W292,E401,W391,E265
+        flake8 . --count --show-source --statistics

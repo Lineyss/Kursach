@@ -11,6 +11,8 @@ from django.conf import settings
 from .forms import *
 import zipfile
 
+;
+
 @login_required
 def main(request, path='/'):
     IDFolder = None
