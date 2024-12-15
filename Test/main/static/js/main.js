@@ -181,11 +181,11 @@ const WorkChangeName = (item, finalFunction) => {
 };
 
 const startLoad = () => {
-    load.style.display = 'block !important';
+    // load.style.display = 'block !important';
 };
 
 const endLoad = () => {
-    load.style.display = 'none !important';
+    // load.style.display = 'none !important';
 };
 
 

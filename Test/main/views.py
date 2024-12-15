@@ -1,5 +1,5 @@
 from django.http import HttpResponse, FileResponse, JsonResponse, HttpResponseForbidden
-from guardian.shortcuts import assign_perm, get_objects_for_user
+from guardian.shortcuts import assign_perm
 from django.contrib.auth.decorators import login_required
 from .models import Folder, File, FileFolder, Teg
 from django.contrib.auth.models import Permission
@@ -195,8 +195,8 @@ def delete_file_folder(request, id):
     if request.method == 'POST':
         try:
             fileFolder = FileFolder.objects.get(id=id)
-            if not request.user.has_perm('delete', fileFolder.get_file_or_folder()):
-                return HttpResponseForbidden("У вас нет прав для удаления этого файла/папки.")
+            # if not request.user.has_perm('delete', fileFolder.get_file_or_folder()):
+            #     return HttpResponseForbidden("У вас нет прав для удаления этого файла/папки.")
             fileFolder.delete()
             return HttpResponse(status=200)
         except:
@@ -209,8 +209,8 @@ def update_file_folder_name(request, id, title):
         if title:
             try:
                 fileFolder = FileFolder.objects.get(id=id)
-                if not request.user.has_perm('update', fileFolder.get_file_or_folder()):
-                    return HttpResponseForbidden("У вас нет прав для измнения названия этого файла/папки.")
+                # if not request.user.has_perm('update', fileFolder.get_file_or_folder()):
+                #     return HttpResponseForbidden("У вас нет прав для измнения названия этого файла/папки.")
                 
                 file = fileFolder.get_file_or_folder()
 
@@ -232,13 +232,10 @@ def file_create(request):
         if form.is_valid():
             try:
                 file_instance = form.save()
-                permissions = Permission.objects.filter(content_type__model='Folder')
-                for perm in permissions:
-                    assign_perm(perm.name, request.user, file_instance)
+                file_instance.save()
                 return HttpResponse(f'{file_instance.IDFileFolder.id}:{file_instance.Title}', status=200)
             except Exception as e:
                 return HttpResponse(e, status=400)
-        print(form.errors)
     return HttpResponse('Не удалось загрузить файл, попробуйте позже', status=400)
 
 @login_required
@@ -248,13 +245,10 @@ def folder_create(request):
         if form.is_valid():
             try:
                 folder_instance = form.save()
-                permissions = Permission.objects.filter(content_type__model='Folder')
-                for perm in permissions:
-                    assign_perm(perm.name, request.user, folder_instance)
+                folder_instance.save()
                 return HttpResponse(f'{folder_instance.IDFileFolder.id}:{folder_instance.Title}', status=200)
             except Exception as e:
                 return HttpResponse(e, status=400)
-        print(form.errors)
         
     return HttpResponse('Не удалось создать папку, попробуйте позже', status=400)
 
@@ -270,8 +264,8 @@ def move_file_folder(request, idMoveFileFolder, idToMoveFolder):
             if fileFolder is None:
                 fileFolder = _fileFolder.get_related_folder()
 
-            if not request.user.has_perm('open', fileFolder):
-                return HttpResponseForbidden("У вас нет прав для перемещания этого файла/папки.")
+            # if not request.user.has_perm('open', fileFolder):
+            #     return HttpResponseForbidden("У вас нет прав для перемещания этого файла/папки.")
         except:
             return HttpResponse('Не удалось найти файл/папку для перемещения', status=400)
         
@@ -280,8 +274,8 @@ def move_file_folder(request, idMoveFileFolder, idToMoveFolder):
         except:
             return HttpResponse('Не удалось найти папку куда перемещать', status=400)
     
-        if not request.user.has_perm('open', fileFolder):
-            return HttpResponseForbidden("У вас нет прав для перемещания в эту папку.")
+        # if not request.user.has_perm('open', fileFolder):
+        #     return HttpResponseForbidden("У вас нет прав для перемещания в эту папку.")
         
         fileFolder.IDFolder = toFileFolder
         fileFolder.save()
@@ -322,9 +316,9 @@ def download(request, id, from_url=False):
 
     if file is None:
         file = file_folder.get_related_folder()
-        if not from_url:
-            if not request.user.has_perm('download', file):
-                return HttpResponseForbidden("У вас нет прав для скачивания этой папки.")
+        # if not from_url:
+        #     if not request.user.has_perm('download', file):
+        #         return HttpResponseForbidden("У вас нет прав для скачивания этой папки.")
         file.Title += ".zip"
         zip_path = settings.ZIP_DIR / file.Title
 
@@ -336,8 +330,8 @@ def download(request, id, from_url=False):
 
         path = zip_path
     else:
-        if not request.user.has_perm('download', file):
-            return HttpResponseForbidden("У вас нет прав для скачивания этого файла.")
+        # if not request.user.has_perm('download', file):
+        #     return HttpResponseForbidden("У вас нет прав для скачивания этого файла.")
         path = file.File.path
 
     file_download = open(path, "rb")
@@ -351,8 +345,8 @@ def create_download_links(request, id):
     if request.method == 'POST':
         file_folder = FileFolder.objects.filter(id=id).first()
         file = file_folder.get_file_or_folder()
-        if not request.user.has_perm('download', file):
-            return HttpResponseForbidden("У вас нет прав для скачивания этой папки.")
+        # if not request.user.has_perm('download', file):
+        #     return HttpResponseForbidden("У вас нет прав для скачивания этой папки.")
         url = DownloadURL(Owner=request.user, IDFileFolder=file_folder)
         url.save()
         return redirect('profile')

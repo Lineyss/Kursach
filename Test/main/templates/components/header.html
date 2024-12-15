@@ -6,6 +6,11 @@
     </h2>
 
     <div class="navigation">
+        {% if user.is_superuser %}
+        <a class="button" href="/admin">
+            Админка
+        </a>
+        {% endif %}
         <a class="button" href="{% url 'profile' %}">
             Личный кабинет
         </a>

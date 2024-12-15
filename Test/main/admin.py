@@ -1,3 +1,4 @@
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from import_export.admin import ImportExportModelAdmin
 from django.contrib import admin
 from .forms import TegForm
@@ -49,14 +50,6 @@ class FileAdmin(ImportExportModelAdmin):
     def save_model(self, request, obj, form, change):
         return super().save_model(request, obj, form, change)
 
-@admin.register(ActivityLog)
-class ActivityLogAdmin(ImportExportModelAdmin):
-    list_display = ('id', 'IDUser', 'IDFileFolder', 'Action', 'Date', )
-    list_display_links = ('id',)
-    search_fields = ('id', 'Action', )
-    list_editable = ('Action', )
-    list_filter = ('IDUser', 'IDFileFolder', 'Date', )
-
 @admin.register(SharedURI)
 class SharedURIAdmin(ImportExportModelAdmin):
     list_display = ('id', 'IDSender', 'Premissions', 'Token', 'DateCreate', 'DateDelete')
@@ -78,3 +71,16 @@ class UserSiteAdmin(ImportExportModelAdmin):
     list_display_links = ('id', )
     search_fields = ('id', 'username', )
     list_editable = ('is_superuser', 'username', 'MaxSize')
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    list_display = ('object_repr', 'action_flag_display', 'user', 'content_type', 'object_id', 'action_time') 
+    list_filter = ('action_flag', 'user', 'content_type') 
+    search_fields = ('object_repr', 'change_message')
+
+    def action_flag_display(self, obj):
+        action_dict = {ADDITION: 'Добавление', CHANGE: 'Изменение', DELETION: 'Удаление'} 
+        return action_dict.get(obj.action_flag, 'Неизвестно') 
+
+    action_flag_display.short_description = 'Действие'

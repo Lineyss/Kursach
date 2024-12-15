@@ -1,7 +1,6 @@
-from django.contrib.auth.forms import UserCreationForm 
+from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
 from django.views.generic.edit import CreateView
-from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django import forms
 from .models import *
@@ -14,8 +13,20 @@ class TegForm(forms.ModelForm):
             'Color': forms.TextInput(attrs={'type': 'color'}),
         }
 
+class MyUserCreationForm(UserCreationForm):
+    class Meta:
+        model = UserSite
+        fields = ('username', 'password1', 'password2')
+    
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Пароли не совпадают")
+        return password2
+
 class SingUp(CreateView):
-    form_class = UserCreationForm
+    form_class = MyUserCreationForm
     success_url = reverse_lazy("login")
     template_name = "registration/reg.html"
 
@@ -26,7 +37,7 @@ class UsernameChangeForm(forms.ModelForm):
     
     def clean_username(self):
         new_username = self.cleaned_data['username']
-        if User.objects.filter(username=new_username).exists():
+        if UserSite.objects.filter(username=new_username).exists():
             raise ValidationError("Such a name already exists")
 
         return new_username

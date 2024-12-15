@@ -11,6 +11,8 @@ from typing import Any
 import datetime as dt
 import os
 
+from .utils import logger
+
 class UserSite(AbstractUser):
     CurrentSize = models.FloatField(default=0, verbose_name='Занятое место (гб)',blank=True, 
         validators=[MinValueValidator(0)])
@@ -23,8 +25,17 @@ class UserSite(AbstractUser):
         verbose_name_plural = 'Пользователи'
     
     def save(self, *args, **kwargs):
+        if not self.pk:
+            logger.info(f"Был создан новый пользователь: {self.username}")
+        else:
+            logger.info(f"Пользователь обновлён: {self.username}")
+        
         self.CurrentSize = float(Decimal(self.CurrentSize).quantize(Decimal('0.001'), rounding=ROUND_DOWN))
-        super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        logger.info(f"Пользователь удалён: {self.username}")
+        return super().delete(*args, **kwargs)
 
 class Teg(models.Model):
     Title = models.CharField(max_length=10, verbose_name='Название')
@@ -35,6 +46,18 @@ class Teg(models.Model):
     class Meta:
         verbose_name = "Тег"
         verbose_name_plural = 'Теги'
+    
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            logger.info(f"Создан новый тег: {self.Title} пользователем: {self.IDUser.username}")
+        else:
+            logger.info(f"Обновлён тег: {self.Title} пользователем: {self.IDUser.username}")
+
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        logger.info(f"Удалён тег: {self.Title} пользователем: {self.IDUser.username}")
+        super().delete(*args, **kwargs)
 
 class FileFolder(models.Model):
     IDTeg = models.ForeignKey(Teg, verbose_name='Тег', on_delete=models.SET_NULL, null=True, blank=True)
@@ -126,25 +149,25 @@ class Folder(AFileFolder):
         verbose_name_plural = 'Папки'
 
     def save(self, *args, **kwargs):
-        
-        
         self.check_unique_title()
-        
         if self.IDFolder is not None:
             self.Size += self.IDFolder.Size
             self.Path = f'{self.IDFolder.Path}/{self.Title}'
         else:
-            self.Size = sum(file.Size for file in File.objects.filter(IDFolder_id = self.pk))
+            self.Size = sum(file.Size for file in File.objects.filter(IDFolder_id=self.pk))
             self.Path = f'/{self.Title}'
 
+        saved_instance = super().save(*args, **kwargs)
+        if not self.pk:
+            logger.info(f"Создана папка: {self.Title}")
+        else:
+            logger.info(f"Обновлена папка: {self.Title}")
+        
+        return saved_instance
 
-        save = super().save(*args, **kwargs)
-
-        permissions = Permission.objects.filter(content_type__model='Folder')
-        for perm in permissions:
-            assign_perm(perm.name, self.Owner, self)
-
-        return save
+    def delete(self, *args, **kwargs):
+        logger.info(f"Папка удалена: {self.Title}")
+        return super().delete(*args, **kwargs)
 
 class File(AFileFolder):
     IDFolder = models.ForeignKey('Folder', on_delete=models.CASCADE, verbose_name='Папка где хранится файл', null=True, blank=True, related_name='files')
@@ -190,7 +213,6 @@ class File(AFileFolder):
         bytes_value = bits / 8
         gb_value = bytes_value / (1024 ** 3)
         return gb_value
-
     def save(self, *args, **kwargs):
         self.Size = self.File.size
         gb = self.bits_to_gb(self.Size)
@@ -202,34 +224,20 @@ class File(AFileFolder):
             self.Owner.save()
 
         self.set_values()
-
-        save = super().save(*args, **kwargs)
         
-        permissions = Permission.objects.filter(content_type__model='File')
-        for perm in permissions:
-            assign_perm(perm.name, self.Owner, self)
-
-
-        return save
-
+        save_instance = super().save(*args, **kwargs)
+        if not self.pk:
+            logger.info(f"Создан файл: {self.Title}")
+        else:
+            logger.info(f"Обновлён файл: {self.Title}")
+        
+        return save_instance
 
     def delete(self, *args, **kwargs):
-        path = os.path.dirname(self.File.name)
-        os.remove(path)
-        if self.IDFolder is not None:
-            self.IDFileFolder.Size -= self.Size
-
+        logger.info(f"Файл удалён: {self.Title}")
+        self.Owner.CurrentSize -= self.bits_to_gb(self.Size)
+        self.Owner.save()
         return super().delete(*args, **kwargs)
-
-class ActivityLog(models.Model):
-    IDUser = models.ForeignKey(UserSite, on_delete=models.CASCADE, verbose_name='Пользователь')
-    IDFileFolder = models.ForeignKey(FileFolder, on_delete=models.CASCADE, verbose_name='Файл/папка')
-    Action = models.CharField(max_length=100, verbose_name='Действие')
-    Date = models.DateTimeField(auto_now_add=True, verbose_name='Дата')
-
-    class Meta:
-        verbose_name = "Логи"
-        verbose_name_plural = 'Логи'
 
 class DownloadURL(models.Model):
     Owner = models.ForeignKey(UserSite, verbose_name='Создатель ссылки', on_delete=models.CASCADE)
@@ -241,12 +249,13 @@ class DownloadURL(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            url = DownloadURL.objects.get(IDFileFolder = self.IDFileFolder)
+            url = DownloadURL.objects.get(IDFileFolder=self.IDFileFolder)
             url.delete()
-        except:
+        except DownloadURL.DoesNotExist:
             pass
 
         self.Token = get_random_secret_key()
+        logger.info(f"Создана новая ссылка для скачивания для: {self.IDFileFolder}")
         return super().save(*args, **kwargs)
     
     class Meta:
@@ -264,6 +273,7 @@ class SharedURI(models.Model):
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.DateDelete = timedelta(hours=1) + dt.datetime.now()
+            logger.info(f"Создана ссылка доступа от: {self.IDSender} на {self.IDFileFolder}")
         
         return super().save(*args, **kwargs)
 
