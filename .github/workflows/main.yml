@@ -9,6 +9,10 @@ jobs:
   first_job:
     runs-on: ubuntu-latest
 
+    steps:
+    - name: Get code
+      uses: actions/checkout@v3
+
     - name: Install python
       uses: actions/setup-python@v4
       with:
@@ -19,6 +23,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8
 
-    - name: Check errors
+    - name: Check error
       run: |
         flake8 . --count --show-source --statistics
