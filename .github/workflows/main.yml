@@ -7,7 +7,7 @@ on:
 
 jobs:
   first_job:
-    runs-on: ubuntu-aplin
+    runs-on: ubuntu-apline
 
     steps:
     - name: Checkout Code
