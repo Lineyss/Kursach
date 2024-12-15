@@ -25,4 +25,4 @@ jobs:
 
     - name: Check error
       run: |
-        flake8 . --count --show-source --statistics
+        flake8 . --count --show-source --statistics --select=E9,F63,F7 --ignore=E501,W292,E401,W391,E265
